@@ -53,7 +53,8 @@ cmake \
     -DSPHINX_WARNINGS_AS_ERRORS=OFF \
     -DCLANG_BUILD_EXAMPLES:BOOL=OFF \
     -DBUILD_SHARED_LIBS=OFF \
-    -DCLANG_DEFAULT_UNWINDLIB=libgcc
+    -DCLANG_DEFAULT_UNWINDLIB=libgcc \
+    -DCMAKE_INSTALL_LIBDIR=${_libdir}
 
-# cmake --build clang-build
-# cmake --install clang-build
+LD_LIBRARY_PATH="${LD_LIBRARY_PATH};${llvm_install_dir}/lib64" cmake --build clang-build
+cmake --install clang-build
