@@ -14,6 +14,7 @@ start:
 	docker-compose logs -f
 
 .PHONY: stop
+## Stops all containers managed by "make start" and removes them immediately.
 stop:
 	docker-compose stop -t0
 	docker-compose rm -f
