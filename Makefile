@@ -18,3 +18,9 @@ start:
 stop:
 	docker-compose stop -t0
 	docker-compose rm -f
+
+.PHONY: follow-logs
+## Shows the output of running containers managed by "make start"
+## It's safe to ctr-c out of this command, this won't stop any containers.
+follow-logs:
+	docker-compose logs -f
