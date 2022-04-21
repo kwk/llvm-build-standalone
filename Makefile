@@ -22,7 +22,7 @@ start: build-image remove-container secret
 	$(MAKE) follow-logs
 
 .PHONY: stop
-## Stops the bb-worker container created with "start.
+## Stops the bb-worker container created with "start".
 stop:
 	@echo "=== Stopping container bb-worker..."
 	-podman stop --time 0 bb-worker
@@ -48,7 +48,7 @@ follow-logs:
 
 PASSWORD_FILE:=./bb-worker/secrets/buildbot-worker-password
 .PHONY: secret
-## Removes the bb-worker password secret (if exists) and re-creates it. 
+## Removes the bb-worker-password secret (if exists) and re-creates it.
 secret:
 ifeq ($(strip $(shell ls $(PASSWORD_FILE) 2>/dev/null)),)
 	@echo "=== ERROR: Please create password file: $(PASSWORD_FILE)"
