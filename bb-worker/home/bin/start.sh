@@ -13,7 +13,7 @@ source /home/bb-worker/sandbox/bin/activate
 BUILDBOT_WORKER_NAME=${BUILDBOT_WORKER_NAME:-"worker0"}
 
 # Read the worker password from a mounted file.
-BUILDBOT_WORKER_PASSWORD=$(cat /secret-volume/buildbot-worker-password)
+BUILDBOT_WORKER_PASSWORD=$(cat /run/secrets/bb-worker-password)
 
 BUILDBOT_WORKER_BASE_DIR="${BUILDBOT_BASEDIR}/${BUILDBOT_WORKER_NAME}"
 BUILDBOT_WORKER_INFO_DIR="${BUILDBOT_WORKER_BASE_DIR}/info"
