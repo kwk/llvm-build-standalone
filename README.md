@@ -1,7 +1,7 @@
 # Readme
 
 This is a project to host the bits and pieces to fire up a build bot worker
-that hooks up to the LLVM buildbot infrastructure.
+that hooks up to the LLVM buildbot staging infrastructure.
 
 ## Preparation
 
@@ -10,8 +10,7 @@ to store your password. This file won't be versioned in git. If you only have
 the `*.sample` file in that directory, just copy that and remove the extension
 `*.sample`.
 
-To specify the name or admin of the buildbot worker, go to `docker-compose.yaml`
-and ajust the settings accordingly. It's pretty self explanatory.
+Run `make start` to do everything in one go.
 
 ## Start and stop
 
