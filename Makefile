@@ -8,9 +8,6 @@ include ./help.mk
 ## container. Upon launch, the  logs are followed in the terminal
 ## (see "follow-logs" target).
 ## It's safe to ctr-c out of this command once running and following the logs.
-# Upstream LLVM port choices:
-# lab.llvm.org:9994 = staging
-# lab.llvm.org:9990 = production
 start: build-image remove-container secret
 	@echo "=== Starting container bb-worker..."
 	-podman run -d --name bb-worker \
@@ -47,14 +44,30 @@ follow-logs:
 	podman logs --follow --names --timestamps bb-worker
 
 PASSWORD_FILE:=./bb-worker/secrets/buildbot-worker-password
+SECRET_NAME:=bb-worker-password
 .PHONY: secret
-## Removes the bb-worker-password secret (if exists) and re-creates it.
+## Checks if the podman secret called 'bb-worker-password' exists. If it doesn't
+## then it calls 'make update-secret'
 secret:
+ifeq ($(strip $(shell podman secret inspect --format '{{.Spec.Name}}' $(SECRET_NAME) 2>/dev/null)),)
+	$(MAKE) update-secret 
+else
+	@echo 'Podman secret $(SECRET_NAME) already exists'
+endif
+
+.PHONY: update-secret
+## Checks for a password in ./bb-worker/secrets/bb-worker-password and updates
+## or creates the podman secret 'bb-worker-password' from it.
+update-secret:
 ifeq ($(strip $(shell ls $(PASSWORD_FILE) 2>/dev/null)),)
 	@echo "=== ERROR: Please create password file: $(PASSWORD_FILE)"
 	exit 1
 endif
-	@echo "=== Removing secret (if exists): bb-worker-password"
-	-podman secret rm bb-worker-password &>/dev/null
-	podman secret create bb-worker-password $(PASSWORD_FILE)
-	@echo "Creating secret: bb-worker-password"
+	@echo "=== Removing podman secret (if exists): $(SECRET_NAME)"
+	-podman secret rm $(SECRET_NAME) &>/dev/null
+	@echo "=== Creating podman secret: $(SECRET_NAME)"
+	podman secret create $(SECRET_NAME) $(PASSWORD_FILE)
+	@echo 
+	@echo "WARNING: We highly recommend that you delete the password file: $(PASSWORD_FILE)"
+	@echo
+	
