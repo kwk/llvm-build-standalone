@@ -1,15 +1,54 @@
 #!/bin/bash
 
-set -ex
+# This script builds LLVM and Clang in standalone mode that means it first
+# builds LLVM and installs it into a specific directory. That directory is then
+# used when building Clang which depends on it. The configration is currently
+# very similar to the one being used to generate LLVM daily Fedora snapshots.
+# (See: https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots/)
+
+# Enable Error tracing
+set -o errtrace
+
+# Print trace for all commands ran before execution
+set -x
+
+# Include the Buildbot helper functions
+HERE="$(dirname $0)"
+. ${HERE}/buildbot-helper.sh
+
+# Ensure all commands pass, and not dereferencing unset variables.
+set -eu
+halt_on_failure
+
+BUILDBOT_ROOT=${BUILDBOT_ROOT:-/home/bb-worker/}
+REVISION=${BUILDBOT_REVISION:-origin/main}
+LLVM_ROOT="${BUILDBOT_ROOT}/llvm-project"
+
+LLVM_INSTALL_DIR=${BUILDBOT_ROOT}/llvm-install/
+LLVM_BUILD_DIR=${BUILDBOT_ROOT}/llvm-build/
+CLANG_INSTALL_DIR=${BUILDBOT_ROOT}/clang-install/
+CLANG_BUILD_DIR=${BUILDBOT_ROOT}/clang-build/
+BUILD_TYPE=RelWithDebInfo
+
+# Set-up llvm-project
+if [ ! -d "${LLVM_ROOT}" ]; then
+  build_step "Cloning llvm-project repo"
+  git clone --progress https://github.com/llvm/llvm-project.git ${LLVM_ROOT}
+fi
+
+build_step "Updating llvm-project repo"
+git -C "${LLVM_ROOT}" fetch origin
+git -C "${LLVM_ROOT}" reset --hard ${REVISION}
 
 # See https://docs.fedoraproject.org/en-US/packaging-guidelines/RPMMacros/#macros_installation
 # for these variable names.
 
+build_step "Configuring llvm"
+
 _lib=lib64
 llvm_triple=x86_64-redhat-linux-gnu
-build_type=RelWithDebInfo
 
-_prefix=$PWD/llvm-install/
+_prefix=${LLVM_INSTALL_DIR}
 _exec_prefix=${_prefix}
 _includedir=${_prefix}/include
 _bindir=${_exec_prefix}/bin
@@ -18,10 +57,9 @@ _sysconfdir=${_prefix}/etc
 _datarootdir=${_prefix}/share
 _pkgdocdir=${_prefix}/share/doc/llvm
 
-echo @@@BUILD_STEP configuring llvm@@@
-/usr/bin/cmake \
-    -S ../llvm \
-    -B llvm-build \
+cmake \
+    -S ${LLVM_ROOT}/llvm \
+    -B ${LLVM_BUILD_DIR} \
     -G Ninja \
     -DCMAKE_C_FLAGS_RELEASE:STRING=-DNDEBUG \
     -DCMAKE_CXX_FLAGS_RELEASE:STRING=-DNDEBUG \
@@ -37,7 +75,7 @@ echo @@@BUILD_STEP configuring llvm@@@
     -DBUILD_SHARED_LIBS:BOOL=ON \
     -DBUILD_SHARED_LIBS:BOOL=OFF \
     -DLLVM_PARALLEL_LINK_JOBS=1 \
-    -DCMAKE_BUILD_TYPE=${build_type} \
+    -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
     -DCMAKE_SKIP_RPATH:BOOL=ON \
     -DLLVM_LIBDIR_SUFFIX=64 \
     -DLLVM_TARGETS_TO_BUILD=all \
@@ -70,19 +108,24 @@ echo @@@BUILD_STEP configuring llvm@@@
     -DLLVM_INSTALL_TOOLCHAIN_ONLY:BOOL=OFF \
     -DLLVM_DEFAULT_TARGET_TRIPLE=${llvm_triple} \
     -DSPHINX_WARNINGS_AS_ERRORS=OFF \
-    -DCMAKE_INSTALL_PREFIX=${_prefix} \
     -DLLVM_INSTALL_SPHINX_HTML_DIR=${_pkgdocdir}/html \
     -DSPHINX_EXECUTABLE=/usr/bin/sphinx-build-3 \
-    || echo @@@STEP_FAILURE@@@
 
-echo @@@BUILD_STEP building llvm@@@
-cmake --build llvm-build || echo @@@STEP_FAILURE@@@
+build_step "Building llvm"
+cmake --build ${LLVM_BUILD_DIR}
 
-echo @@@BUILD_STEP installing llvm@@@
-cmake --install llvm-build || echo @@@STEP_FAILURE@@@
+build_step "Installing llvm"
+rm -rf "${LLVM_INSTALL_DIR}"
+cmake --install ${LLVM_BUILD_DIR}
 
-_prefix=$PWD/clang-install/
-llvm_install_dir=$PWD/llvm-install
+# This is meant to extinguish any dependency on files being taken
+# from the llvm build dir when building clang.
+build_step "Removing llvm build directory"
+rm -rf "${LLVM_BUILD_DIR}"
+
+build_step "Configuring clang"
+
+_prefix=${CLANG_INSTALL_DIR}
 _exec_prefix=${_prefix}
 _includedir=${_prefix}/include
 _bindir=${_exec_prefix}/bin
@@ -92,14 +135,13 @@ _datarootdir=${_prefix}/share
 _pkgdocdir=${_prefix}/share/doc/llvm
 
 # help find llvm-config that we just build with build-llvm.sh
-# PATH="${llvm_install_dir}/bin;$PATH"
+# PATH="${LLVM_INSTALL_DIR}/bin;$PATH"
 
-echo @@@BUILD_STEP configuring clang@@@
 cmake \
-    -S ../clang \
-    -B clang-build \
+    -S ${LLVM_ROOT}/clang \
+    -B ${CLANG_BUILD_DIR} \
     -G Ninja \
-    -DLLVM_CMAKE_DIR=${llvm_install_dir}/lib64/cmake/llvm/ \
+    -DLLVM_CMAKE_DIR=${LLVM_INSTALL_DIR}/lib64/cmake/llvm/ \
     -DCMAKE_C_FLAGS_RELEASE:STRING=-DNDEBUG \
     -DCMAKE_CXX_FLAGS_RELEASE:STRING=-DNDEBUG \
     -DCMAKE_Fortran_FLAGS_RELEASE:STRING=-DNDEBUG \
@@ -114,17 +156,17 @@ cmake \
     -DBUILD_SHARED_LIBS:BOOL=ON \
     -DLLVM_PARALLEL_LINK_JOBS=1 \
     -DLLVM_LINK_LLVM_DYLIB:BOOL=ON \
-    -DCMAKE_BUILD_TYPE=${build_type} \
-    -DPYTHON_EXECUTABLE=${_bindir}/python3 \
+    -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+    -DPYTHON_EXECUTABLE=/usr/bin/python3 \
     -DCMAKE_SKIP_RPATH:BOOL=ON \
     -DLLVM_ENABLE_PLUGINS:BOOL=ON \
     -DCLANG_ENABLE_PLUGINS:BOOL=ON \
     -DCLANG_INCLUDE_TESTS:BOOL=ON \
-    -DLLVM_EXTERNAL_CLANG_TOOLS_EXTRA_SOURCE_DIR=../clang-tools-extra \
+    -DLLVM_EXTERNAL_CLANG_TOOLS_EXTRA_SOURCE_DIR=${LLVM_ROOT}/clang-tools-extra \
     -DLLVM_EXTERNAL_LIT=/usr/bin/lit \
     -DLLVM_MAIN_SRC_DIR=${_datarootdir}/llvm/src \
     -DLLVM_LIBDIR_SUFFIX=64 \
-    -DLLVM_TABLEGEN_EXE:FILEPATH=${llvm_install_dir}/bin/llvm-tblgen \
+    -DLLVM_TABLEGEN_EXE:FILEPATH=${LLVM_INSTALL_DIR}/bin/llvm-tblgen \
     -DCLANG_ENABLE_ARCMT:BOOL=ON \
     -DCLANG_ENABLE_STATIC_ANALYZER:BOOL=ON \
     -DCLANG_INCLUDE_DOCS:BOOL=ON \
@@ -140,11 +182,13 @@ cmake \
     -DCLANG_BUILD_EXAMPLES:BOOL=OFF \
     -DBUILD_SHARED_LIBS=OFF \
     -DCLANG_DEFAULT_UNWINDLIB=libgcc \
-    -DCMAKE_INSTALL_LIBDIR=${_libdir} \
-    || echo @@@STEP_FAILURE@@@
+    -DCMAKE_INSTALL_LIBDIR=${_libdir}
 
-echo @@@BUILD_STEP building clang@@@
-LD_LIBRARY_PATH="${LD_LIBRARY_PATH};${llvm_install_dir}/lib64" cmake --build clang-build || echo @@@STEP_FAILURE@@@
+build_step "Building clang"
+LD_LIBRARY_PATH="${LD_LIBRARY_PATH};${LLVM_INSTALL_DIR}/lib64" cmake --build ${CLANG_BUILD_DIR}
 
-echo @@@BUILD_STEP installing clang@@@
-cmake --install clang-build || echo @@@STEP_FAILURE@@@
+build_step "Installing clang"
+rm -rf ${CLANG_INSTALL_DIR}
+cmake --install ${CLANG_INSTALL_DIR}
+
+exit 0
