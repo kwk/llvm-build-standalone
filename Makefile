@@ -3,20 +3,22 @@ SHELL := /bin/bash
 
 include ./help.mk
 
+.PHONY: all
+## Runs these targets to help you get started:
+## build-image, remove-container, secret start, follow-logs
+all: build-image remove-container secret start follow-logs
+
 .PHONY: start
 ## Runs the buildbot worker in the background on localhost using a podman
-## container. Upon launch, the  logs are followed in the terminal
-## (see "follow-logs" target).
-## It's safe to ctr-c out of this command once running and following the logs.
-start: build-image remove-container secret
+## container.
+start:
 	@echo "=== Starting container bb-worker..."
-	-podman run -d --name bb-worker \
+	podman run -d --name bb-worker \
 		-e BUILDBOT_WORKER_NAME=standalone-build-x86_64 \
 		-e BUILDBOT_INFO_ADMIN=kkleine@redhat.com \
 		-e BUILDBOT_MASTER=lab.llvm.org:9994 \
 		--secret bb-worker-password \
 		bb-worker
-	$(MAKE) follow-logs
 
 .PHONY: stop
 ## Stops the bb-worker container created with "start".
@@ -26,7 +28,7 @@ stop:
 
 .PHONY: build-image
 ## Builds the bb-worker container image.
-build-image:
+build-image: Dockerfile.bb-worker
 	@echo "=== Building container image bb-worker..."
 	podman build --tag bb-worker -f Dockerfile.bb-worker .
 
@@ -49,16 +51,18 @@ SECRET_NAME:=bb-worker-password
 ## Checks if the podman secret called 'bb-worker-password' exists. If it doesn't
 ## then it calls 'make update-secret'
 secret:
+	@echo "=== Checking if podman secret exists: $(SECRET_NAME)"
 ifeq ($(strip $(shell podman secret inspect --format '{{.Spec.Name}}' $(SECRET_NAME) 2>/dev/null)),)
 	$(MAKE) update-secret 
 else
-	@echo 'Podman secret $(SECRET_NAME) already exists'
+	@echo 'Podman secret already exists: $(SECRET_NAME)'
 endif
 
 .PHONY: update-secret
 ## Checks for a password in ./bb-worker/secrets/bb-worker-password and updates
 ## or creates the podman secret 'bb-worker-password' from it.
 update-secret:
+	@echo "=== Updating podman secret: $(SECRET_NAME)"
 ifeq ($(strip $(shell ls $(PASSWORD_FILE) 2>/dev/null)),)
 	@echo "=== ERROR: Please create password file: $(PASSWORD_FILE)"
 	exit 1

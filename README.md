@@ -17,10 +17,10 @@ Run `make start` to do everything in one go.
 We have the following make targets:
 
 <dl>
+<dt><code>all</code></dt><dd>Runs these targets to help you get started:<br/>
+ build-image, remove-container, secret start, follow-logs</dd>
 <dt><code>start</code></dt><dd>Runs the buildbot worker in the background on localhost using a podman<br/>
- container. Upon launch, the  logs are followed in the terminal<br/>
- (see "follow-logs" target).<br/>
- It's safe to ctr-c out of this command once running and following the logs.</dd>
+ container.</dd>
 <dt><code>stop</code></dt><dd>Stops the bb-worker container created with "start".</dd>
 <dt><code>build-image</code></dt><dd>Builds the bb-worker container image.</dd>
 <dt><code>remove-container</code></dt><dd>Remove any container with the name bb-worker (if it exists).</dd>
