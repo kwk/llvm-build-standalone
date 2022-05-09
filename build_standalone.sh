@@ -2,9 +2,7 @@
 
 # This script builds LLVM and Clang in standalone mode that means it first
 # builds LLVM and installs it into a specific directory. That directory is then
-# used when building Clang which depends on it. The configration is currently
-# very similar to the one being used to generate LLVM daily Fedora snapshots.
-# (See: https://copr.fedorainfracloud.org/coprs/g/fedora-llvm-team/llvm-snapshots/)
+# used when building Clang which depends on it.
 
 # Enable Error tracing
 set -o errtrace
@@ -50,9 +48,6 @@ rm -rf ${LLVM_BUILD_DIR}
 rm -rf ${LLVM_INSTALL_DIR}
 rm -rf ${CLANG_BUILD_DIR}
 rm -rf ${CLANG_INSTALL_DIR}
-
-# See https://docs.fedoraproject.org/en-US/packaging-guidelines/RPMMacros/#macros_installation
-# for these variable names.
 
 build_step "Configuring llvm"
 
@@ -103,6 +98,6 @@ LD_LIBRARY_PATH="${LLVM_INSTALL_DIR}/lib64" cmake --build ${CLANG_BUILD_DIR}
 
 build_step "Installing clang"
 rm -rf ${CLANG_INSTALL_DIR}
-cmake --install ${CLANG_INSTALL_DIR}
+cmake --install ${CLANG_BUILD_DIR}
 
 exit 0
