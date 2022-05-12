@@ -10,7 +10,7 @@ to store your password. This file won't be versioned in git. If you only have
 the `*.sample` file in that directory, just copy that and remove the extension
 `*.sample`.
 
-Run `make start` to do everything in one go.
+Run `make all` to do everything in one go.
 
 ## Start and stop
 
