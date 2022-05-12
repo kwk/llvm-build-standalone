@@ -10,6 +10,8 @@ to store your password. This file won't be versioned in git. If you only have
 the `*.sample` file in that directory, just copy that and remove the extension
 `*.sample`.
 
+You need to install `podman` and `git` packages on RHEL/Fedora host to run this.
+
 Run `make all` to do everything in one go.
 
 ## Start and stop
