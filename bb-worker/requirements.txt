@@ -11,22 +11,24 @@ attrs==21.2.0
     #   automat
     #   twisted
 autobahn==21.11.1
-    # via buildbot
+    # via
+    #   buildbot
+    #   buildbot-worker
 automat==20.2.0
     # via twisted
-buildbot[bundle]==3.4.0
+buildbot[bundle]==3.5.0
     # via
     #   -r requirements.in
     #   buildbot-www
-buildbot-console-view==3.4.0
+buildbot-console-view==3.5.0
     # via buildbot
-buildbot-grid-view==3.4.0
+buildbot-grid-view==3.5.0
     # via buildbot
-buildbot-waterfall-view==3.4.0
+buildbot-waterfall-view==3.5.0
     # via buildbot
-buildbot-worker==3.4.0
+buildbot-worker==3.5.0
     # via buildbot
-buildbot-www==3.4.0
+buildbot-www==3.5.0
     # via buildbot
 certifi==2021.10.8
     # via requests
@@ -60,6 +62,10 @@ markupsafe==2.0.1
     # via
     #   jinja2
     #   mako
+msgpack==1.0.4
+    # via
+    #   buildbot
+    #   buildbot-worker
 pycparser==2.21
     # via cffi
 pyjwt==2.3.0
@@ -93,7 +99,7 @@ typing-extensions==4.0.1
     # via twisted
 urllib3==1.26.7
     # via requests
-zope.interface==5.4.0
+zope-interface==5.4.0
     # via
     #   buildbot
     #   twisted
