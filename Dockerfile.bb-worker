@@ -19,6 +19,7 @@ RUN dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False \
     libstdc++-static \
     libxml2-devel \
     lld \
+    llvm-test \
     make \
     nano \
     ncurses-devel \
@@ -30,6 +31,7 @@ RUN dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False \
     python3-psutil \
     python3-recommonmark \
     python3-service-identity \
+    python3-setuptools \
     python3-virtualenv \
     redhat-lsb-core \
     rsync \
