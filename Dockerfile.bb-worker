@@ -77,8 +77,9 @@ ENV BUILDBOT_INFO_ADMIN="Your Name <yourname at email dot com>"
 
 ENV BUILDBOT_ACCESS_URI=""
 
-# See https://reviews.llvm.org/D138114
-ENV CMAKE_TRACE=--trace
+# See https://reviews.llvm.org/D138120
+ENV CMAKE_TRACE_CONFIGURE_LLD=--trace
+ENV CMAKE_VERBOSE_LLD=--verbose
 ################################################################################
 
 ENV PATH="/home/bb-worker/bin:${PATH}" HOME=/home/bb-worker
