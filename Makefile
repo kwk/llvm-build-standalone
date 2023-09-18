@@ -74,4 +74,31 @@ endif
 	@echo 
 	@echo "WARNING: We highly recommend that you delete the password file: $(PASSWORD_FILE)"
 	@echo
-	
+
+############################################################################
+############################## TROUBLESHOOTING SECTION #####################
+############################################################################
+
+./llvm-project:
+	git clone --progress https://github.com/llvm/llvm-project.git
+
+./llvm-zorg:
+	git clone --progress git@github.com:llvm/llvm-zorg.git
+
+.PHONY: troubleshooting
+## Enters a bash for you to run the ./standalone-build.sh script right away
+## without going through the hassle of buildbot. This is primarily good for
+## when debugging issues that seem to be occurring only when being ran inside
+## a container.
+troubleshooting: ./llvm-zorg ./llvm-project
+	podman run -it \
+		-e BUILDBOT_WORKER_NAME=standalone-build-x86_64 \
+		-e BUILDBOT_INFO_ADMIN=kkleine@redhat.com \
+		-e BUILDBOT_MASTER=lab.llvm.org:9994 \
+		-v $(PWD)/llvm-zorg:/home/bb-worker/llvm-zorg:Z \
+		-v $(PWD)/llvm-project:/home/bb-worker/llvm-zorg/zorg/buildbot/builders/annotated/llvm-project:Z \
+		-u $(shell id -u $(USER)):$(shell id -g $(USER)) \
+		-w /home/bb-worker/llvm-zorg/zorg/buildbot/builders/annotated \
+		--entrypoint bash \
+		-u root \
+		bb-worker
